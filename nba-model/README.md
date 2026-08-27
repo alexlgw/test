@@ -39,24 +39,30 @@ schema/           Migrations, applied in order by the runner
   005_derived.sql   integrity-check + team-form + key-player views
   006_enrichment.sql season-level team strength + player availability (see below)
   007_quarters.sql  per-quarter player scoring + quarter-distribution views
+  008_odds_views.sql closing-line + result-vs-line views over market_line
 src/nbadb/
   db.py             connection, migration runner, identity resolution
   ingest/feed.py    parse raw feed JSON into the schema; replay state
   ingest/reference.py  parse season enrichment JSON (team strength, players)
   ingest/espn.py    parse the real ESPN season fixture (offline)
+  ingest/odds.py    parse the ESPN odds fixture into market_line (offline)
 scripts/
   bootstrap.py      create the DB and load the real BOS/OKC game
   enrich.py         load the season enrichment for BOS and OKC
-  fetch_espn.py     NETWORK: refresh the ESPN season fixture
+  fetch_espn.py     NETWORK: refresh the games fixture
+  fetch_odds.py     NETWORK: refresh the odds fixture (open+close lines)
   load_espn.py      load the real ESPN season into the DB (offline)
+  load_odds.py      load the odds into market_line (offline)
   verify.py         prove replay, integrity, and derived views work
   matchup.py        win-probability estimate from the enriched data
   quarters.py       quarter-by-quarter scoring, team and per-player
-  walkforward.py    sequential bet test + the "$500 last season" answer
+  walkforward.py    sequential bet test (assumed -110 pricing)
+  odds.py           grade the season at REAL closing lines + CLV
 data/
   bos_okc_raw.json  the real feed payload, committed as a fixture
   enrichment_2025_26.json  cited season aggregates for BOS and OKC
   espn_2025_26_games.json  real 162-game season (quarters, box, scorers)
+  espn_odds_2025_26.json  real open+close lines (spread, ML, total) per game
 research/
   backtest.py       pattern-mining walkthrough on two teams (see note below)
 simulator/
@@ -189,6 +195,36 @@ doesn't have**. A genuine edge means beating that closing line (CLV) — which
 needs a historical-odds feed, not more box-score or quarter data. The quarter
 data is genuinely useful for *understanding* games and for quarter-level props;
 it does not, by itself, manufacture a profitable system.
+
+## Odds analysis — real closing lines (`schema/004` + `008`, `make odds`)
+
+The wall this project kept hitting was odds: without real prices, no bet can be
+graded in dollars. ESPN's core API turns out to carry **opening and closing
+lines** (spread, moneyline, total) per game. `scripts/fetch_odds.py` pulls them
+into the committed fixture `data/espn_odds_2025_26.json`; `scripts/load_odds.py`
+ingests them into the existing `market_line` table as a proper time series —
+an OPEN row and a CLOSE row per selection, with `is_closing` set at ingest.
+
+`make odds` then grades the whole season at those **real** prices:
+
+- **How the market priced them:** OKC closed as a favorite in 94% of games,
+  averaging a −10.5 spread and a −852 moneyline (89% implied); BOS −4.8 and −303.
+- **Records vs the closing line:** OKC 64-18 straight up but **48% ATS**; BOS
+  56-26 SU, 60% ATS, and its games hit the **under** 63% of the time.
+- **The $500 answer, priced for real:** betting both teams to win at their
+  actual moneylines nets about **+$18 on $500** across the entire season — a
+  rounding error, not a system. The gaudy 73% win rate is fully charged for by
+  the price. Every other flat strategy lands within a few percent of break-even.
+- **CLV:** betting the opening moneyline and grading against the close beat the
+  closing number just 51% of the time (avg +0.9%) — statistically nothing.
+
+The conclusion, now backed by real prices rather than an assumed −110: **with
+public data there is no edge in betting good teams to win.** The market's
+closing line already knows they are good. Any real edge lives in *price* —
+catching a stale number before the market corrects it — which is what the
+`bet` / `bet_grade` ledger and `fair_price` devig in `004` exist to measure, and
+which needs many books, not one. More box-score, quarter, or odds *history* does
+not manufacture that edge; it just lets you prove, honestly, when it is absent.
 
 ## About `research/backtest.py`
 
