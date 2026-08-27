@@ -37,14 +37,19 @@ schema/           Migrations, applied in order by the runner
   003_stats.sql     stat facts (typed core columns + JSON overflow)
   004_market.sql    odds as a time series, bet ledger, CLV
   005_derived.sql   integrity-check + team-form + key-player views
+  006_enrichment.sql season-level team strength + player availability (see below)
 src/nbadb/
   db.py             connection, migration runner, identity resolution
   ingest/feed.py    parse raw feed JSON into the schema; replay state
+  ingest/reference.py  parse season enrichment JSON (team strength, players)
 scripts/
   bootstrap.py      create the DB and load the real BOS/OKC game
+  enrich.py         load the season enrichment for BOS and OKC
   verify.py         prove replay, integrity, and derived views work
+  matchup.py        win-probability estimate from the enriched data
 data/
   bos_okc_raw.json  the real feed payload, committed as a fixture
+  enrichment_2025_26.json  cited season aggregates for BOS and OKC
 research/
   backtest.py       pattern-mining walkthrough on two teams (see note below)
 simulator/
@@ -101,6 +106,43 @@ The integrity checks surface these gaps rather than hiding them: on the loaded
 game, `check_boxscore_reconciliation` flags that the feed truncated the roster
 (8–9 players returned for a 12+ player game), leaving ~a quarter of the scoring
 unattributed.
+
+## Season enrichment (`schema/006`, `data/enrichment_2025_26.json`)
+
+A single game's box score cannot tell you who is likely to win the *next* game.
+Judging that probability needs season-level priors, so the enrichment layer adds
+two tables for the 2025-26 season of the two modelled teams:
+
+- **`team_season_stat`** — record, home/away split, offensive & defensive
+  rating, pace, and derived `net_rating` / `win_pct`. This is the basis on which
+  two teams that played different schedules can be compared.
+- **`player_season_stat`** — per-game averages plus **availability**
+  (`games_played / team_games`), because a star who played 20% of the season
+  inflates a team's season rating relative to who will actually be on the floor.
+
+The data comes from cited public sources (Wikipedia, StatMuse, Sports
+Illustrated — see the `sources` block in the JSON), and follows the same
+provenance rule as the game feed: each row is landed verbatim in `raw_payload`
+with `source='web_reference'` and carries an `as_of_date`, because a season
+aggregate is only true as of a date. Load it with `make enrich`.
+
+Two convenience views sit on top: `v_team_strength` (a one-line strength card
+per team) and `v_key_player_availability` (key players with their availability
+caveats).
+
+`scripts/matchup.py` (`make matchup`, or `python3 scripts/matchup.py OKC BOS`)
+turns this into a transparent win-probability estimate:
+
+```
+expected_margin = (home.net_rating - away.net_rating) + home_court(2.5)
+win_prob(home)  = Phi(expected_margin / margin_sd(12))
+```
+
+For OKC (home) vs BOS it prints ~68% / 32% and a fair moneyline, then lists each
+team's key players with availability flags — so the injury context (Tatum at
+20%, Jalen Williams at 40%) is read *with* the estimate, not buried under it.
+This is a season-strength prior, not a bet: to grade a wager you still need the
+market line (`market_line` / `fair_price` in `004`), which needs a paid odds feed.
 
 ## About `research/backtest.py`
 

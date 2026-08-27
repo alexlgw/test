@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "season_id": 2025,
+    "season_label": "2025-26",
+    "as_of_date": "2026-06-30",
+    "note": "Regular-season aggregates for the two modelled teams, from public reference sources. This is DISTINCT from the sandbox game feed used elsewhere in the DB; percentages are stored as fractions. Every team/player row is landed in raw_payload (source='web_reference') and cited via source_url.",
+    "sources": [
+      "https://en.wikipedia.org/wiki/2025%E2%80%9326_Boston_Celtics_season",
+      "https://en.wikipedia.org/wiki/2025%E2%80%9326_Oklahoma_City_Thunder_season",
+      "https://www.statmuse.com/nba/ask?q=Boston+Celtics+pace+offensive+rating+defensive+rating+net+rating+2025-26",
+      "https://www.si.com/nba/thunder/onsi/news/okc-thunder-record-finish-2025-26-regular-season-with-historic-net-rating-01kp4xvna437",
+      "https://www.basketball-reference.com/teams/OKC/2026.html",
+      "https://www.basketball-reference.com/teams/BOS/2026.html"
+    ]
+  },
+  "teams": [
+    {
+      "abbrev": "BOS",
+      "market": "Boston",
+      "name": "Celtics",
+      "conference": "East",
+      "conf_rank": 2,
+      "games": 82, "wins": 56, "losses": 26,
+      "home_wins": 30, "home_losses": 11,
+      "away_wins": 26, "away_losses": 15,
+      "off_rating": 120.8,
+      "def_rating": 112.7,
+      "pace": 94.84,
+      "srs": null,
+      "source": "Wikipedia; StatMuse",
+      "source_url": "https://en.wikipedia.org/wiki/2025%E2%80%9326_Boston_Celtics_season",
+      "players": [
+        {"name": "Jaylen Brown",    "pos": "G-F", "gp": 71, "min": 34.4, "pts": 28.7, "reb": 6.9,  "ast": 5.1, "fg": 47.7, "fg3": 34.7, "ts": 57.3, "key": true,  "note": "primary option with Tatum out"},
+        {"name": "Payton Pritchard","pos": "G",   "gp": 79, "min": 32.4, "pts": 17.0, "reb": 3.9,  "ast": 5.2, "fg": 46.4, "fg3": 37.7, "ts": 58.4, "key": true,  "note": "expanded role; 79 GP"},
+        {"name": "Derrick White",   "pos": "G",   "gp": 77, "min": 34.1, "pts": 16.5, "reb": 4.4,  "ast": 5.4, "fg": 39.4, "fg3": 32.7, "ts": 52.9, "key": true,  "note": "team assists leader"},
+        {"name": "Jayson Tatum",    "pos": "G-F", "gp": 16, "min": 32.6, "pts": 21.8, "reb": 10.0, "ast": 5.3, "fg": 41.1, "fg3": 32.9, "ts": 54.1, "key": true,  "note": "torn Achilles; missed first 62 games, returned Mar 6 2026 (16 GP)"},
+        {"name": "Neemias Queta",   "pos": "C",   "gp": 76, "min": 25.3, "pts": 10.2, "reb": 8.4,  "ast": 1.7, "fg": 65.3, "fg3": 12.5, "ts": 67.4, "key": false, "note": "starting center"},
+        {"name": "Sam Hauser",      "pos": "F",   "gp": 78, "min": 24.8, "pts": 9.2,  "reb": 3.8,  "ast": 1.5, "fg": 41.9, "fg3": 39.3, "ts": 59.0, "key": false, "note": "floor spacing"}
+      ]
+    },
+    {
+      "abbrev": "OKC",
+      "market": "Oklahoma City",
+      "name": "Thunder",
+      "conference": "West",
+      "conf_rank": 1,
+      "games": 82, "wins": 64, "losses": 18,
+      "home_wins": 34, "home_losses": 8,
+      "away_wins": 30, "away_losses": 10,
+      "off_rating": 118.9,
+      "def_rating": 107.7,
+      "pace": 99.3,
+      "srs": null,
+      "source": "Wikipedia; Sports Illustrated; StatMuse",
+      "source_url": "https://en.wikipedia.org/wiki/2025%E2%80%9326_Oklahoma_City_Thunder_season",
+      "players": [
+        {"name": "Shai Gilgeous-Alexander", "pos": "G",   "gp": 68, "min": 33.2, "pts": 31.1, "reb": 4.3, "ast": 6.6, "fg": 55.3, "fg3": 38.6, "ts": 66.5, "key": true,  "note": "league-leading scorer; 68 GP"},
+        {"name": "Chet Holmgren",           "pos": "F-C", "gp": 69, "min": 28.9, "pts": 17.1, "reb": 8.9, "ast": 1.7, "fg": 55.7, "fg3": 36.2, "ts": 65.3, "key": true,  "note": "rim protection + spacing"},
+        {"name": "Jalen Williams",          "pos": "F",   "gp": 33, "min": 28.4, "pts": 17.1, "reb": 4.6, "ast": 5.5, "fg": 48.4, "fg3": 29.9, "ts": 56.0, "key": true,  "note": "recurring hamstring; only 33 GP"},
+        {"name": "Isaiah Hartenstein",      "pos": "C",   "gp": 47, "min": 24.2, "pts": 9.2,  "reb": 9.4, "ast": 3.5, "fg": 62.2, "fg3": 0.0,  "ts": 63.1, "key": true,  "note": "interior anchor; 47 GP"},
+        {"name": "Luguentz Dort",           "pos": "G",   "gp": 69, "min": 26.8, "pts": 8.3,  "reb": 3.6, "ast": 1.2, "fg": 38.5, "fg3": 34.4, "ts": 52.4, "key": false, "note": "point-of-attack defender"},
+        {"name": "Cason Wallace",           "pos": "G",   "gp": 77, "min": 26.6, "pts": 8.6,  "reb": 3.1, "ast": 2.6, "fg": 43.2, "fg3": 35.1, "ts": 53.8, "key": false, "note": "secondary ball-handler/defender"},
+        {"name": "Alex Caruso",             "pos": "G",   "gp": 56, "min": 18.2, "pts": 6.2,  "reb": 2.8, "ast": 2.0, "fg": 42.3, "fg3": 29.3, "ts": 54.0, "key": false, "note": "defensive spark off the bench"}
+      ]
+    }
+  ]
+}
