@@ -13,15 +13,20 @@ with a schema designed to scale to the full league.
 ## Quick start
 
 ```bash
-# No third-party dependencies — the core runs on the Python standard library.
+# The core database (schema, ingest, verify) needs no third-party packages —
+# it runs on the Python standard library.
 make rebuild        # clean DB, run migrations, load the real game, then verify
 ```
 
-`make rebuild` runs `scripts/bootstrap.py` (build + ingest) followed by
-`scripts/verify.py`, which demonstrates game replay, the integrity checks, the
-generated columns, JSON overflow, and the derived key-player view. Requires
-Python 3.9+ (uses SQLite generated columns and the JSON1 extension, both built
-into CPython).
+`make rebuild` runs `clean`, then `init` (`scripts/bootstrap.py` — build +
+ingest), then `verify` (`scripts/verify.py`), which demonstrates game replay,
+the integrity checks, the generated columns, JSON overflow, and the derived
+key-player view. Requires Python 3.9+ (uses SQLite generated columns and the
+JSON1 extension, both built into CPython).
+
+`requirements.txt` (`numpy`, `pandas`, `pytest`) covers the exploratory
+backtest in `research/` and the `make test` target; the core rebuild needs
+none of them.
 
 ## Repository layout
 
@@ -107,7 +112,7 @@ seasons collapses it to 48.9% ATS. The takeaway is that 164 games cannot
 distinguish a 55% bettor from a coin, and the only thing that survives is
 **shopping price against a sharp fair line** (CLV) — a property of the
 transaction, not of any basketball pattern. It needs `numpy` and `pandas`
-(`pip install -r research/requirements.txt`).
+(`pip install -r requirements.txt`).
 
 ## Provenance
 

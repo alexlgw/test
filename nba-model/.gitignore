@@ -1,10 +1,7 @@
-# The database is a build artifact — rebuild it with `make rebuild`.
-data/nba.db
+data/*.db
 data/*.db-wal
 data/*.db-shm
-
-# Python
 __pycache__/
-*.py[cod]
+*.pyc
 .venv/
-venv/
+.env

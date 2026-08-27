@@ -170,9 +170,31 @@ tops=np.array(tops)
 print(f"  Best-of-24 rule on coin flips:  median {np.median(tops):.1%}"
       f"   90th pct {np.percentile(tops,90):.1%}   max {tops.max():.1%}")
 print(f"  P(best-of-24 >= your {best.rate:.1%} by chance alone) = {(tops>=best.rate).mean():.1%}")
-print(f"\n  A single rule at {best.rate:.1%} over {best.n} games has p = "
-      f"{1-0.5*(1+np.math.erf((best.wins-best.n/2)/np.sqrt(best.n/4)/np.sqrt(2))):.3f} on its own,")
-print(f"  but you did not test one rule. You tested 24 and reported the winner.")
+import math
+z_solo = (best.wins - best.n/2)/np.sqrt(best.n/4)
+p_solo = 1-0.5*(1+math.erf(z_solo/np.sqrt(2)))
+print(f"\n  Tested ALONE, {best.wins}-{best.n-best.wins} is z={z_solo:.2f}, p={p_solo:.3f}.")
+print(f"  But you did not test one rule. You tested 24 and reported the winner.")
+
+# ---------------------------------------- the survivor gets a real trial
+print("\n" + "="*66)
+print("STEP 4b — THE SURVIVOR, ON A SAMPLE BIG ENOUGH TO SETTLE IT")
+print("="*66)
+combined_w = int(best.wins + w2); combined_n = int(best.n + n2)
+zc = (combined_w - combined_n/2)/np.sqrt(combined_n/4)
+print(f"  Train + holdout combined: {combined_w}-{combined_n-combined_w} "
+      f"({combined_w/combined_n:.1%})  z={zc:.2f}")
+print(f"  Still under 2 sigma. A holdout of 28 games proves nothing on its own.\n")
+print("  So: regenerate 40 more seasons from the identical process and re-test.")
+big = pd.concat([season("BOS",4.6) for _ in range(20)] +
+                [season("NYK",5.9) for _ in range(20)], ignore_index=True)
+bw = int(big[big.home==0].cover.sum()); bn = int((big.home==0).sum())
+zb = (bw-bn/2)/np.sqrt(bn/4)
+print(f"  'Road games' over {bn:,} games: {bw/bn:.2%} ATS   z={zb:+.2f}   "
+      f"ROI {roi(bw,bn):+.2%}")
+print(f"  It is a coin flip. The 60% was noise that happened to persist across")
+print(f"  one small holdout, which is exactly how a bettor talks themselves into")
+print(f"  a system. One validation split is not validation.")
 
 # ------------------------------------------------- what does survive
 print("\n" + "="*66)
