@@ -1,0 +1,4 @@
+# Dependencies for the exploratory backtest (research/backtest.py) only.
+# The core nba-model database has no third-party dependencies.
+numpy>=1.24
+pandas>=2.0

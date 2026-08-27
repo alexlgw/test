@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CLV Desk — NBA paper betting</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --field:#122229;--panel:#1A303A;--panel-2:#213C48;--rule:#2C4C5A;
+  --ticket:#F2EBDD;--ticket-2:#E4DAC6;--ink:#14202A;
+  --amber:#D6A24A;--amber-dim:#8A6C33;--gain:#4C9E77;--loss:#C4674D;
+  --live:#E0644A;--mute:#7E9BA8;--mute-2:#5A7A88;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--field);color:#DCE8ED;font-family:"IBM Plex Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{padding-bottom:190px}
+.num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+
+header{position:sticky;top:0;z-index:40;background:var(--field);border-bottom:1px solid var(--rule);padding:10px 14px 9px}
+.hrow{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.brand{font-family:"IBM Plex Sans Condensed";font-weight:700;font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+.slatelbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute-2)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:9px;background:var(--rule);border:1px solid var(--rule)}
+.stat{background:var(--field);padding:6px 8px}
+.stat .k{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute-2);display:block}
+.stat .v{font-family:"IBM Plex Mono";font-size:16px;font-weight:500;letter-spacing:-.02em}
+
+main{padding:14px}
+.sechead{display:flex;align-items:center;gap:10px;margin:18px 0 10px}
+.sechead h2{font-family:"IBM Plex Sans Condensed";font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+.sechead .line{flex:1;height:1px;background:var(--rule)}
+.livedot{display:inline-block;width:7px;height:7px;background:var(--live);border-radius:50%;animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+.game{border:1px solid var(--rule);margin-bottom:14px;background:var(--panel)}
+.game.livegame{border-color:#5A3730}
+.gamehead{display:flex;justify-content:space-between;align-items:center;padding:9px 11px;border-bottom:1px solid var(--rule);background:var(--panel-2)}
+.matchup{font-family:"IBM Plex Sans Condensed";font-weight:700;font-size:15px;letter-spacing:.05em}
+.tip{font-family:"IBM Plex Mono";font-size:10px;color:var(--mute-2);letter-spacing:.05em}
+.score{font-family:"IBM Plex Mono";font-size:17px;font-weight:600;letter-spacing:-.02em}
+.scoresub{font-family:"IBM Plex Mono";font-size:9.5px;color:var(--mute-2);letter-spacing:.04em;margin-top:2px;text-align:right}
+
+.mkt{border-bottom:1px solid var(--rule)}.mkt:last-child{border-bottom:0}
+.mktlbl{display:flex;justify-content:space-between;align-items:center;padding:7px 11px 3px;gap:8px}
+.mktlbl .name{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute-2)}
+.mktlbl .fair{font-family:"IBM Plex Mono";font-size:10px;color:var(--amber-dim);text-align:right}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);border-top:1px solid var(--rule)}
+.opt{background:var(--panel);border:0;text-align:left;padding:9px 11px;cursor:pointer;color:inherit;font:inherit;display:flex;justify-content:space-between;align-items:center;gap:8px;transition:background .12s}
+.opt:hover{background:var(--panel-2)}
+.opt:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
+.opt.sel{background:#2B4A3D}
+.opt .side{font-size:12.5px;font-weight:500}
+.opt .book{display:block;font-family:"IBM Plex Mono";font-size:9px;color:var(--mute-2);letter-spacing:.04em;margin-top:2px}
+.opt .price{font-family:"IBM Plex Mono";font-size:15px;font-weight:500;letter-spacing:-.02em;white-space:nowrap}
+.opt .ev{display:block;font-family:"IBM Plex Mono";font-size:9.5px;text-align:right;margin-top:2px}
+.pos{color:var(--gain)}.neg{color:var(--loss)}.flat{color:var(--mute-2)}
+
+.evtoggle{display:flex;align-items:center;gap:8px;margin:2px 0 14px;font-size:11.5px;color:var(--mute)}
+.evtoggle button{background:var(--panel);border:1px solid var(--rule);color:var(--mute);font:inherit;font-size:11px;padding:5px 10px;cursor:pointer;letter-spacing:.04em}
+.evtoggle button[aria-pressed="true"]{background:var(--amber);color:var(--ink);border-color:var(--amber);font-weight:600}
+
+.slip{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--ticket);color:var(--ink);border-top:3px solid var(--amber);max-height:74vh;display:flex;flex-direction:column}
+.slip.livemode{border-top-color:var(--live)}
+.sliphead{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;border-bottom:1px dashed #B9AC90;cursor:pointer}
+.sliphead h3{font-family:"IBM Plex Sans Condensed";font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase}
+.sliphead .cnt{font-family:"IBM Plex Mono";font-size:11px;background:var(--ink);color:var(--ticket);padding:2px 7px;letter-spacing:.05em}
+.slipbody{overflow-y:auto;padding:0 13px}
+.leg{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px dashed #C6BAA0}
+.leg .desc{font-size:12.5px;line-height:1.35}
+.leg .sub{font-family:"IBM Plex Mono";font-size:9.5px;color:#6B6152;margin-top:2px;letter-spacing:.03em}
+.leg .sub.moved{color:#A8442C;font-weight:500}
+.leg .rt{display:flex;align-items:center;gap:9px}
+.leg input{width:62px;font-family:"IBM Plex Mono";font-size:13px;padding:5px 6px;border:1px solid #B9AC90;background:#FBF7EE;color:var(--ink);text-align:right}
+.leg .rm{background:none;border:0;color:#9A8D75;font-size:17px;line-height:1;cursor:pointer;padding:2px 4px}
+.kellybtn{background:none;border:1px solid #B9AC90;font-family:"IBM Plex Mono";font-size:9px;padding:4px 5px;cursor:pointer;color:#6B6152;letter-spacing:.04em}
+.slipfoot{padding:10px 13px 13px;border-top:1px dashed #B9AC90;background:var(--ticket-2)}
+.mode{display:flex;gap:1px;background:#B9AC90;border:1px solid #B9AC90;margin-bottom:9px}
+.mode button{flex:1;background:var(--ticket);border:0;font:inherit;font-size:11px;padding:6px;cursor:pointer;color:#6B6152;letter-spacing:.06em;text-transform:uppercase}
+.mode button[aria-pressed="true"]{background:var(--ink);color:var(--ticket);font-weight:600}
+.mode button:disabled{opacity:.4;cursor:not-allowed}
+.parlayinfo{font-family:"IBM Plex Mono";font-size:10.5px;line-height:1.5;color:#6B6152;margin-bottom:9px}
+.parlayinfo b{color:var(--ink)}
+.place{width:100%;background:var(--ink);color:var(--ticket);border:0;font-family:"IBM Plex Sans Condensed";font-weight:700;font-size:14px;letter-spacing:.14em;text-transform:uppercase;padding:13px;cursor:pointer}
+.place:disabled{background:#B9AC90;color:#F2EBDD;cursor:not-allowed}
+.place.livebtn{background:var(--live);color:#2A100A}
+.empty{padding:16px 0 18px;font-size:12.5px;color:#6B6152;line-height:1.5}
+.delaybar{height:4px;background:#B9AC90;margin-bottom:9px;overflow:hidden}
+.delaybar i{display:block;height:100%;background:var(--live);width:0;animation:fill 4s linear forwards}
+@keyframes fill{to{width:100%}}
+.delaytxt{font-family:"IBM Plex Mono";font-size:10.5px;color:#6B6152;margin-bottom:9px;letter-spacing:.03em}
+
+.res{border:1px solid var(--rule);background:var(--panel);margin-bottom:12px;padding:11px}
+.res.liveres{border-left:3px solid var(--live)}
+.reshead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:9px}
+.reshead .d{font-size:13px;font-weight:500;line-height:1.35}
+.reshead .m{font-family:"IBM Plex Mono";font-size:9.5px;color:var(--mute-2);margin-top:3px;letter-spacing:.03em}
+.badge{font-family:"IBM Plex Mono";font-size:10px;font-weight:600;padding:3px 7px;white-space:nowrap;letter-spacing:.06em}
+.b-win{background:var(--gain);color:#0C1A14}.b-loss{background:var(--loss);color:#2A100A}
+.tag{display:inline-block;font-family:"IBM Plex Mono";font-size:8.5px;letter-spacing:.1em;padding:1px 5px;background:var(--live);color:#2A100A;margin-right:5px;vertical-align:1px}
+
+.ruler{margin:11px 0 3px;padding-top:13px;border-top:1px solid var(--rule)}
+.track{position:relative;height:3px;background:var(--rule);margin:20px 6px 6px}
+.mark{position:absolute;top:50%;width:2px;height:15px;transform:translate(-50%,-50%);transition:left .5s cubic-bezier(.2,.8,.3,1)}
+.mark.you{background:var(--ticket)}.mark.close{background:var(--amber)}
+.mlbl{position:absolute;font-family:"IBM Plex Mono";font-size:9px;white-space:nowrap;transform:translateX(-50%);letter-spacing:.04em;transition:left .5s cubic-bezier(.2,.8,.3,1)}
+.mlbl.you{top:-19px;color:var(--ticket)}.mlbl.close{top:14px;color:var(--amber)}
+.clvline{position:absolute;top:50%;height:3px;transform:translateY(-50%);transition:all .5s cubic-bezier(.2,.8,.3,1)}
+.clvverdict{font-family:"IBM Plex Mono";font-size:10.5px;margin-top:26px;letter-spacing:.03em}
+
+.summary{border:1px solid var(--amber);background:var(--panel);padding:13px;margin-bottom:16px}
+.summary h3{font-family:"IBM Plex Sans Condensed";font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
+.srow{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--rule);font-size:12.5px;gap:10px}
+.srow:last-of-type{border-bottom:0}
+.srow .v{font-family:"IBM Plex Mono";font-weight:500;white-space:nowrap}
+.verdict{margin-top:11px;padding-top:10px;border-top:1px solid var(--rule);font-size:12.5px;line-height:1.55;color:var(--mute)}
+.verdict b{color:#DCE8ED}
+.nextbtn{width:100%;background:var(--amber);color:var(--ink);border:0;font-family:"IBM Plex Sans Condensed";font-weight:700;font-size:14px;letter-spacing:.14em;text-transform:uppercase;padding:13px;cursor:pointer;margin-bottom:10px}
+.advbtn{width:100%;background:var(--live);color:#2A100A;border:0;font-family:"IBM Plex Sans Condensed";font-weight:700;font-size:14px;letter-spacing:.14em;text-transform:uppercase;padding:13px;cursor:pointer;margin-bottom:10px}
+.ghost{width:100%;background:none;color:var(--mute-2);border:1px solid var(--rule);font:inherit;font-size:11.5px;padding:9px;cursor:pointer;letter-spacing:.05em}
+.note{font-size:11.5px;line-height:1.55;color:var(--mute-2);margin:10px 0 16px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media(min-width:620px){main{max-width:620px;margin:0 auto}header .hrow,.stats{max-width:620px;margin-left:auto;margin-right:auto}.slip{max-width:620px;margin:0 auto}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow"><div class="brand">CLV Desk</div><div class="slatelbl" id="slatelbl">Slate 1 · pregame</div></div>
+  <div class="stats">
+    <div class="stat"><span class="k">Bankroll</span><span class="v num" id="s-bank">$5,000</span></div>
+    <div class="stat"><span class="k">P&amp;L</span><span class="v num" id="s-pl">—</span></div>
+    <div class="stat"><span class="k">Beat close</span><span class="v num" id="s-clv">—</span></div>
+  </div>
+</header>
+<main id="main"></main>
+<div class="slip" id="slip" hidden>
+  <div class="sliphead" id="sliphead"><h3 id="sliptitle">Bet slip</h3><span class="cnt num" id="slipcnt">0</span></div>
+  <div class="slipbody" id="slipbody"></div>
+  <div class="slipfoot" id="slipfoot"></div>
+</div>
+<script>
+/* ================= math ================= */
+function gauss(m,sd){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();
+  return m+sd*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function normCdf(z){const t=1/(1+.2316419*Math.abs(z)),d=.3989423*Math.exp(-z*z/2);
+  let p=d*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return z>0?1-p:p}
+const dec=o=>o>0?o/100+1:100/Math.abs(o)+1;
+const impl=o=>o>0?100/(o+100):Math.abs(o)/(Math.abs(o)+100);
+function amer(p){let o=p>=.5?-100*p/(1-p):100*(1-p)/p;o=Math.round(o/5)*5;
+  if(o>-100&&o<0)o=-100;if(o<100&&o>0)o=100;if(o===0)o=100;return o}
+const money=n=>(n<0?"-$":"$")+Math.abs(n).toLocaleString(undefined,{maximumFractionDigits:0});
+const sign=n=>(n>0?"+":"")+n;
+const clamp=p=>Math.min(.97,Math.max(.03,p));
+const devig=(a,b)=>impl(a)/(impl(a)+impl(b));
+function mkt(p,h){return[amer(clamp(p)*(1+h)),amer(clamp(1-p)*(1+h))]}
+const BOOKS=["DraftKings","FanDuel","BetMGM","Caesars"];
+function buildMkt(pTrue,nSharp,nSoft,holdSharp,holdSoft){
+  const l=mkt(clamp(pTrue+gauss(0,nSharp)),holdSharp);
+  const sharpFair=devig(l[0],l[1]);
+  let best=[null,null];
+  BOOKS.forEach(bk=>{const s=mkt(clamp(pTrue+gauss(0,nSoft)),holdSoft);
+    for(let i=0;i<2;i++)if(!best[i]||dec(s[i])>dec(best[i].o))best[i]={o:s[i],b:bk}});
+  return{sharpFair,best};
+}
+/* ================= slate ================= */
+const TEAMS=[["Celtics","BOS"],["Nuggets","DEN"],["Thunder","OKC"],["Knicks","NYK"],["Mavericks","DAL"],
+["Bucks","MIL"],["Timberwolves","MIN"],["Suns","PHX"],["76ers","PHI"],["Cavaliers","CLE"],
+["Heat","MIA"],["Kings","SAC"],["Magic","ORL"],["Pacers","IND"],["Lakers","LAL"],["Rockets","HOU"]];
+const STARS=["J. Tatum","N. Jokić","S. Gilgeous-Alexander","J. Brunson","L. Dončić","G. Antetokounmpo",
+"A. Edwards","D. Booker","T. Maxey","D. Mitchell","B. Adebayo","D. Sabonis","P. Banchero","T. Haliburton","L. James","A. Sengun"];
+const SD_M=11.6,SD_T=15.5,SD_P=7.2;
+/* betting windows: seg = eighths elapsed. Grade each against the NEXT observation. */
+const WIN=[{lbl:"End of 1st",seg:2,next:4},{lbl:"Halftime",seg:4,next:6},{lbl:"End of 3rd",seg:6,next:7}];
+
+let state={bank:5000,slate:1,phase:"pregame",win:-1,games:[],slip:[],mode:"single",
+  parStake:0,showEV:false,placed:[],results:null,hist:[],pending:null};
+
+function genSlate(){
+  const idx=[...TEAMS.keys()].sort(()=>Math.random()-.5),games=[];
+  for(let g=0;g<3;g++){
+    const ai=idx[g*2],hi=idx[g*2+1];
+    const trueMargin=gauss(3.0,6.2),trueTotal=gauss(228,11),projH=Math.max(12,gauss(24,4.6));
+    /* consistent path in eighths */
+    const path=[{m:0,t:0,p:0}];
+    for(let s=1;s<=8;s++){const pr=path[s-1];
+      path.push({m:pr.m+gauss(trueMargin/8,SD_M/Math.sqrt(8)),
+                 t:pr.t+Math.max(8,gauss(trueTotal/8,SD_T/Math.sqrt(8))),
+                 p:pr.p+Math.max(0,gauss(projH/8,SD_P/Math.sqrt(8)))});}
+    const spLine=Math.round((trueMargin+gauss(0,.35))*2)/2;
+    const tLine=Math.round((trueTotal+gauss(0,1.6))*2)/2;
+    const pLine=Math.round((projH+gauss(0,.9))*2)/2;
+    games.push({id:g,away:TEAMS[ai],home:TEAMS[hi],starH:STARS[hi],
+      trueMargin,trueTotal,projH,path,spLine,tLine,pLine,
+      tip:["7:00","7:30","10:00"][g]+" ET",
+      ml:buildMkt(normCdf(trueMargin/SD_M),.018,.055,.024,.048),
+      sp:buildMkt(normCdf((trueMargin-spLine)/SD_M),.012,.05,.024,.048),
+      tot:buildMkt(1-normCdf((tLine-trueTotal)/SD_T),.012,.05,.024,.048),
+      prop:buildMkt(1-normCdf((pLine-projH)/SD_P),.02,.07,.03,.07)});
+  }
+  return games;
+}
+/* true fair probability of each market given state at segment `seg` */
+function trueFair(g,key,seg,lines){
+  const t=(8-seg)/8, st=g.path[seg], sd=Math.sqrt(t);
+  const L=lines||{sp:g.spLine,tot:g.tLine,prop:g.pLine};
+  if(t<=0)return null;
+  if(key==="ml")  return normCdf((st.m+g.trueMargin*t)/(SD_M*sd));
+  if(key==="sp")  return normCdf((st.m+g.trueMargin*t-L.sp)/(SD_M*sd));
+  if(key==="tot") return 1-normCdf((L.tot-(st.t+g.trueTotal*t))/(SD_T*sd));
+  if(key==="prop")return 1-normCdf((L.prop-(st.p+g.projH*t))/(SD_P*sd));
+}
+/* build live markets at a window; books reset spread/total/prop lines to near-even */
+function liveMarkets(g,seg){
+  const t=(8-seg)/8,st=g.path[seg];
+  const L={sp:Math.round(st.m+g.trueMargin*t),
+           tot:Math.round(st.t+g.trueTotal*t),
+           prop:Math.round((st.p+g.projH*t)*2)/2};
+  /* live: sharper books still tight, soft books noisier, hold much higher */
+  return {lines:L,
+    ml:  buildMkt(trueFair(g,"ml",seg),.02,.075,.035,.072),
+    sp:  buildMkt(trueFair(g,"sp",seg,L),.015,.07,.035,.072),
+    tot: buildMkt(trueFair(g,"tot",seg,L),.015,.07,.035,.072),
+    prop:buildMkt(trueFair(g,"prop",seg,L),.025,.095,.04,.095)};
+}
+/* ================= render board ================= */
+const evOf=(o,f)=>f*(dec(o)-1)-(1-f);
+function evTag(o,f){if(!state.showEV)return"";const e=evOf(o,f)*100;
+  return `<span class="ev ${e>.5?"pos":e<-.5?"neg":"flat"}">${e>0?"+":""}${e.toFixed(1)}%</span>`}
+function optBtn(gi,mk,s,label,key,live){
+  const id=`${live?"L"+state.win:"P"}|${gi}|${key}|${s}`;
+  const fair=s===0?mk.sharpFair:1-mk.sharpFair;
+  const sel=state.slip.some(b=>b.id===id)?" sel":"";
+  return `<button class="opt${sel}" data-id="${id}">
+    <span><span class="side">${label}</span><span class="book">${mk.best[s].b}</span></span>
+    <span><span class="price num">${sign(mk.best[s].o)}</span>${evTag(mk.best[s].o,fair)}</span></button>`}
+function mktBlock(gi,mk,key,name,labels,live){
+  return `<div class="mkt"><div class="mktlbl"><span class="name">${name}</span>
+  <span class="fair num">sharp fair ${(mk.sharpFair*100).toFixed(1)} / ${((1-mk.sharpFair)*100).toFixed(1)}%</span></div>
+  <div class="opts">${optBtn(gi,mk,0,labels[0],key,live)}${optBtn(gi,mk,1,labels[1],key,live)}</div></div>`}
+function fmt(n){return n>0?`-${n}`:`+${Math.abs(n)}`}
+
+function renderBoard(){
+  const live=state.phase==="live",m=document.getElementById("main");
+  let h=`<div class="evtoggle"><button id="evbtn" aria-pressed="${state.showEV}">${state.showEV?"Hiding":"Show"} EV</button>
+    <span>${live?"Live holds run 7–9%. Positive EV is much rarer in here.":"Try spotting the +EV prices before you toggle."}</span></div>`;
+  if(live){
+    const w=WIN[state.win];
+    h+=`<div class="sechead"><span class="livedot"></span><h2>${w.lbl} — live board</h2><div class="line"></div></div>`;
+    state.games.forEach((g,gi)=>{
+      const lm=g.live[state.win],st=g.path[w.seg];
+      const hs=Math.round((st.t+st.m)/2),as=Math.round((st.t-st.m)/2);
+      h+=`<div class="game livegame"><div class="gamehead">
+        <span class="matchup">${g.away[1]} @ ${g.home[1]}</span>
+        <span><div class="score num">${as} — ${hs}</div><div class="scoresub">${g.starH.split(" ")[1]} ${Math.round(st.p)} pts</div></span></div>
+        ${mktBlock(gi,lm.ml,"ml","Live moneyline",[g.home[0],g.away[0]],1)}
+        ${mktBlock(gi,lm.sp,"sp","Live spread",[`${g.home[1]} ${fmt(lm.lines.sp)}`,`${g.away[1]} ${fmt(-lm.lines.sp)}`],1)}
+        ${mktBlock(gi,lm.tot,"tot","Live total",[`Over ${lm.lines.tot}`,`Under ${lm.lines.tot}`],1)}
+        ${mktBlock(gi,lm.prop,"prop",`Live prop — ${g.starH}`,[`Over ${lm.lines.prop}`,`Under ${lm.lines.prop}`],1)}
+      </div>`});
+    h+=`<p class="note">Live lines are repriced from the current score. The books' fair estimates are noisier than pregame, but they charge 7–9% for the privilege — so a soft live price has to be badly wrong before it's actually +EV.</p>`;
+  }else{
+    h+=`<div class="sechead"><h2>Tonight's board</h2><div class="line"></div></div>`;
+    state.games.forEach((g,gi)=>{
+      h+=`<div class="game"><div class="gamehead"><span class="matchup">${g.away[1]} @ ${g.home[1]}</span><span class="tip num">${g.tip}</span></div>
+      ${mktBlock(gi,g.ml,"ml","Moneyline",[g.home[0],g.away[0]])}
+      ${mktBlock(gi,g.sp,"sp","Spread",[`${g.home[1]} ${fmt(g.spLine)}`,`${g.away[1]} ${fmt(-g.spLine)}`])}
+      ${mktBlock(gi,g.tot,"tot","Total",[`Over ${g.tLine}`,`Under ${g.tLine}`])}
+      ${mktBlock(gi,g.prop,"prop",`Prop — ${g.starH}`,[`Over ${g.pLine} pts`,`Under ${g.pLine} pts`])}</div>`});
+    h+=`<p class="note">Sharp fair is the devigged Pinnacle-style number. Prices are best-of-four soft books — what line shopping actually gets you.</p>`;
+  }
+  m.innerHTML=h;
+  document.getElementById("evbtn").onclick=()=>{state.showEV=!state.showEV;renderBoard()};
+  m.querySelectorAll(".opt").forEach(b=>b.onclick=()=>toggleLeg(b.dataset.id));
+}
+function legFrom(id){
+  const[ph,gi,key,si]=id.split("|"),g=state.games[+gi],s=+si,live=ph[0]==="L";
+  const w=live?+ph.slice(1):-1;
+  const mk=live?g.live[w][key]:g[key];
+  const L=live?g.live[w].lines:{sp:g.spLine,tot:g.tLine,prop:g.pLine};
+  const nm={ml:[g.home[0]+" ML",g.away[0]+" ML"],
+    sp:[`${g.home[1]} ${fmt(L.sp)}`,`${g.away[1]} ${fmt(-L.sp)}`],
+    tot:[`${g.away[1]}@${g.home[1]} Over ${L.tot}`,`${g.away[1]}@${g.home[1]} Under ${L.tot}`],
+    prop:[`${g.starH} Over ${L.prop}`,`${g.starH} Under ${L.prop}`]};
+  return{id,gi:+gi,key,s,live,win:w,lines:L,price:mk.best[s].o,book:mk.best[s].b,
+    fair:s===0?mk.sharpFair:1-mk.sharpFair,desc:nm[key][s],stake:0};
+}
+function toggleLeg(id){const i=state.slip.findIndex(b=>b.id===id);
+  if(i>=0)state.slip.splice(i,1);else state.slip.push(legFrom(id));renderBoard();renderSlip()}
+function kelly(l){const b=dec(l.price)-1;return Math.max(0,Math.round(.25*Math.max(0,(l.fair*b-(1-l.fair))/b)*state.bank))}
+
+/* ================= slip ================= */
+function renderSlip(){
+  const slip=document.getElementById("slip");
+  if(state.phase==="final"){slip.hidden=true;return}
+  slip.hidden=false;
+  const live=state.phase==="live";
+  slip.className="slip"+(live?" livemode":"");
+  document.getElementById("sliptitle").textContent=live?"Live slip":"Bet slip";
+  document.getElementById("slipcnt").textContent=state.slip.length;
+  const body=document.getElementById("slipbody"),foot=document.getElementById("slipfoot");
+
+  if(state.pending){ // bet-delay confirmation
+    const moved=state.pending.filter(l=>l.newPrice!==l.price);
+    body.innerHTML=state.pending.map(l=>`<div class="leg"><div><div class="desc">${l.desc}</div>
+      <div class="sub ${l.newPrice!==l.price?"moved":""}">${l.newPrice!==l.price
+        ? `${sign(l.price)} → ${sign(l.newPrice)} · line moved`
+        : `${sign(l.price)} · price held`}</div></div>
+      <div class="rt"><span class="num">${money(l.stake)}</span></div></div>`).join("");
+    foot.innerHTML=`<div class="delaytxt">${moved.length
+      ? `${moved.length} of ${state.pending.length} leg${state.pending.length>1?"s":""} repriced during the delay. Accept or cancel.`
+      : `All prices held through the delay.`}</div>
+      <button class="place livebtn" id="acceptbtn">Accept and place</button>
+      <div style="height:7px"></div><button class="ghost" id="cancelbtn">Cancel</button>`;
+    document.getElementById("acceptbtn").onclick=confirmPending;
+    document.getElementById("cancelbtn").onclick=()=>{state.pending=null;renderSlip()};
+    return;
+  }
+  if(!state.slip.length){
+    body.innerHTML=`<p class="empty">${live
+      ? "Tap live prices to add them. Watch what the delay does to your price on submit."
+      : "Tap prices on the board to add bets. Two or more from different games builds a parlay."}</p>`;
+    foot.innerHTML=(live?"":`<button class="place" disabled>Place bets</button>`)+
+      (live?`<button class="advbtn" id="advbtn">Skip — advance game</button>`:
+            `<div style="height:7px"></div><button class="ghost" id="tipbtn">Tip off without a pregame bet</button>`);
+    wireAdvance();return;
+  }
+  const par=state.mode==="parlay"&&!live;
+  body.innerHTML=state.slip.map((b,i)=>`<div class="leg"><div>
+    <div class="desc">${b.live?'<span class="tag">LIVE</span>':""}${b.desc}</div>
+    <div class="sub">${b.book} ${sign(b.price)} · fair ${(b.fair*100).toFixed(1)}%</div></div>
+    <div class="rt">${par?"":`<button class="kellybtn" data-k="${i}">¼K</button>
+    <input type="number" min="0" step="5" value="${b.stake||""}" placeholder="0" data-i="${i}">`}
+    <button class="rm" data-r="${i}">×</button></div></div>`).join("");
+
+  let f="";
+  if(!live)f+=`<div class="mode"><button data-m="single" aria-pressed="${!par}">Straight</button>
+    <button data-m="parlay" aria-pressed="${par}" ${state.slip.length<2?"disabled":""}>Parlay</button></div>`;
+  if(par){
+    const same=new Set(state.slip.map(b=>b.gi)).size<state.slip.length;
+    if(same)f+=`<div class="parlayinfo">Same-game legs are correlated, so a real book reprices them rather than multiplying. Pick legs from different games.</div>
+      <button class="place" disabled>Place bets</button>`;
+    else{const d=state.slip.reduce((a,b)=>a*dec(b.price),1),fr=state.slip.reduce((a,b)=>a*b.fair,1);
+      f+=`<div class="parlayinfo">Payout <b>${sign(amer(1/d))}</b> (${d.toFixed(2)}×) · fair <b>${sign(amer(fr))}</b> (${(1/fr).toFixed(2)}×)<br>
+      Combined hold <b>${((1-fr*d)*100).toFixed(1)}%</b> — each leg's vig multiplies.</div>
+      <div class="leg"><div class="desc">Parlay stake</div><div class="rt">
+      <input type="number" min="0" step="5" value="${state.parStake||""}" placeholder="0" id="parstake"></div></div>
+      <button class="place" id="placebtn" ${state.parStake<=0?"disabled":""}>Place parlay</button>`}
+  }else{
+    const t=state.slip.reduce((a,b)=>a+(+b.stake||0),0);
+    f+=`<button class="place ${live?"livebtn":""}" id="placebtn" ${t<=0?"disabled":""}>
+      ${live?"Submit live bets":"Place bets"} · ${money(t)}</button>`;
+  }
+  if(live)f+=`<div style="height:7px"></div><button class="ghost" id="advbtn">Skip — advance game</button>`;
+  else f+=`<div style="height:7px"></div><button class="ghost" id="tipbtn">Tip off</button>`;
+  foot.innerHTML=f;
+
+  body.querySelectorAll("input[data-i]").forEach(i=>i.oninput=e=>{
+    state.slip[+e.target.dataset.i].stake=+e.target.value||0;
+    const t=state.slip.reduce((a,b)=>a+(+b.stake||0),0),pb=document.getElementById("placebtn");
+    if(pb){pb.disabled=t<=0;pb.textContent=`${live?"Submit live bets":"Place bets"} · ${money(t)}`}});
+  body.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{state.slip[+b.dataset.k].stake=kelly(state.slip[+b.dataset.k]);renderSlip()});
+  body.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>{state.slip.splice(+b.dataset.r,1);renderBoard();renderSlip()});
+  foot.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{if(!b.disabled){state.mode=b.dataset.m;renderSlip()}});
+  const ps=document.getElementById("parstake");
+  if(ps)ps.oninput=e=>{state.parStake=+e.target.value||0;document.getElementById("placebtn").disabled=state.parStake<=0};
+  const pb=document.getElementById("placebtn");if(pb)pb.onclick=submit;
+  wireAdvance();
+}
+function wireAdvance(){
+  const a=document.getElementById("advbtn"),t=document.getElementById("tipbtn");
+  if(a)a.onclick=()=>advance();
+  if(t)t.onclick=()=>{commitSlip();advance()};
+}
+/* commit current slip as placed bets (pregame path, no delay) */
+function commitSlip(){
+  if(!state.slip.length)return;
+  if(state.mode==="parlay"&&state.parStake>0&&new Set(state.slip.map(b=>b.gi)).size===state.slip.length){
+    state.placed.push({parlay:true,legs:state.slip.map(l=>({...l})),stake:state.parStake,seg:0});
+  }else{
+    state.slip.forEach(l=>{if(+l.stake>0)state.placed.push({...l,seg:0})});
+  }
+  state.slip=[];state.parStake=0;state.mode="single";
+}
+/* live submit -> 4s delay -> reprice -> confirm */
+function submit(){
+  if(state.phase!=="live"){commitSlip();advance();return}
+  const legs=state.slip.filter(l=>+l.stake>0);
+  if(!legs.length)return;
+  const foot=document.getElementById("slipfoot");
+  foot.innerHTML=`<div class="delaybar"><i></i></div>
+    <div class="delaytxt">Submitting… books hold live bets 4–8 seconds before accepting.</div>
+    <button class="place" disabled>Waiting</button>`;
+  setTimeout(()=>{
+    state.pending=legs.map(l=>{
+      const moved=Math.random()<.45;
+      let np=l.price;
+      if(moved){const shift=Math.random()<.72?-1:1; // usually against you
+        np=amer(clamp(impl(l.price)+shift*(.008+Math.random()*.022)));}
+      return{...l,newPrice:np}});
+    renderSlip();
+  },4000);
+}
+function confirmPending(){
+  state.pending.forEach(l=>{
+    const g=state.games[l.gi],w=WIN[state.win];
+    /* re-derive fair for the accepted price (the true fair hasn't changed, only the price) */
+    state.placed.push({...l,price:l.newPrice,seg:w.seg,gradeSeg:w.next})});
+  const ids=new Set(state.pending.map(l=>l.id));
+  state.slip=state.slip.filter(l=>!ids.has(l.id));
+  state.pending=null;renderBoard();renderSlip();
+}
+/* ================= advance ================= */
+function advance(){
+  if(state.phase==="pregame"){
+    state.phase="live";state.win=0;
+    state.games.forEach(g=>{g.live=WIN.map(w=>liveMarkets(g,w.seg))});
+  }else{
+    commitLiveStragglers();
+    state.win++;
+    if(state.win>=WIN.length){settle();return}
+  }
+  state.slip=[];state.mode="single";
+  document.getElementById("slatelbl").textContent=`Slate ${state.slate} · ${WIN[state.win].lbl}`;
+  renderBoard();renderSlip();window.scrollTo({top:0,behavior:"smooth"});
+}
+function commitLiveStragglers(){state.slip=[]}
+/* ================= settle ================= */
+function settle(){
+  state.phase="final";
+  const finals=state.games.map(g=>({m:Math.round(g.path[8].m),t:Math.round(g.path[8].t),p:Math.round(g.path[8].p)}));
+  let rows=[],pl=0,ev=0,beat=0,graded=0;
+  const won=(b)=>{const g=state.games[b.gi],f=finals[b.gi],L=b.lines;
+    if(b.key==="ml")return b.s===0?f.m>0:f.m<0;
+    if(b.key==="sp")return b.s===0?(f.m-L.sp)>0:(f.m-L.sp)<0;
+    if(b.key==="tot")return b.s===0?f.t>L.tot:f.t<L.tot;
+    return b.s===0?f.p>L.prop:f.p<L.prop};
+  /* benchmark fair: pregame -> closing (seg 0 sharpest); live -> next window */
+  const bench=(b)=>{const g=state.games[b.gi];
+    const seg=b.live?b.gradeSeg:0;
+    const raw=b.live?trueFair(g,b.key,seg,b.lines):trueFair(g,b.key,0,b.lines);
+    const f=clamp(raw+gauss(0,.008));return b.s===0?f:1-f};
+  state.placed.forEach(b=>{
+    if(b.parlay){
+      const all=b.legs.every(won),d=b.legs.reduce((a,l)=>a*dec(l.price),1);
+      const p=all?b.stake*(d-1):-b.stake;pl+=p;
+      const fr=b.legs.reduce((a,l)=>a*l.fair,1);ev+=(fr*(d-1)-(1-fr))*b.stake;
+      const cd=b.legs.reduce((a,l)=>a*(1/bench(l)),1);graded++;if(d>cd)beat++;
+      rows.push({...b,win:all,pl:p,d,cd});return}
+    const w=won(b),p=w?b.stake*(dec(b.price)-1):-b.stake;
+    pl+=p;ev+=evOf(b.price,b.fair)*b.stake;graded++;
+    const bf=bench(b);if(dec(b.price)>1/bf)beat++;
+    rows.push({...b,win:w,pl:p,benchFair:bf});});
+  state.bank+=pl;state.hist.push({pl,ev,beat,graded});
+  state.results={rows,pl,ev,beat,graded,finals};
+  renderResults();renderSlip();renderStats();window.scrollTo({top:0,behavior:"smooth"});
+}
+function ruler(youD,closeD,label){
+  const span=.20,rel=v=>Math.min(1,Math.max(0,.5+(v/closeD-1)/(2*span)));
+  const y=rel(youD),c=rel(closeD),good=youD>closeD;
+  return `<div class="ruler"><div class="track">
+    <div class="clvline" style="left:${Math.min(y,c)*100}%;width:${Math.abs(y-c)*100}%;background:${good?"var(--gain)":"var(--loss)"}"></div>
+    <div class="mark close" style="left:${c*100}%"></div><div class="mark you" style="left:${y*100}%"></div>
+    <div class="mlbl you" style="left:${y*100}%">you ${sign(amer(1/youD))}</div>
+    <div class="mlbl close" style="left:${c*100}%">${label} ${sign(amer(1/closeD))}</div></div>
+    <div class="clvverdict ${good?"pos":"neg"}">${good?"▲ Beat":"▼ Missed"} by ${Math.abs((youD/closeD-1)*100).toFixed(1)}% of price</div></div>`}
+function renderResults(){
+  const r=state.results,m=document.getElementById("main");
+  let h=`<div class="sechead"><h2>Final</h2><div class="line"></div></div>`;
+  state.games.forEach((g,i)=>{const f=r.finals[i];
+    h+=`<div class="res"><div class="reshead"><div>
+      <div class="d">${g.away[1]} ${Math.round((f.t-f.m)/2)} — ${Math.round((f.t+f.m)/2)} ${g.home[1]}</div>
+      <div class="m">margin ${f.m>0?"+":""}${f.m} ${g.home[1]} · total ${f.t} · ${g.starH} ${f.p} pts</div></div></div></div>`});
+  h+=`<div class="sechead"><h2>Your tickets</h2><div class="line"></div></div>`;
+  if(!r.rows.length)h+=`<p class="note">Nothing staked, so nothing graded.</p>`;
+  r.rows.forEach(row=>{
+    if(row.parlay){h+=`<div class="res"><div class="reshead"><div>
+      <div class="d">${row.legs.length}-leg parlay</div>
+      <div class="m">${row.legs.map(l=>`${l.desc} ${won2(l,r)}`).join(" · ")}</div></div>
+      <span class="badge ${row.win?"b-win":"b-loss"}">${row.win?"WON":"LOST"} ${money(Math.round(row.pl))}</span></div>
+      ${ruler(row.d,row.cd,"close")}</div>`;return}
+    h+=`<div class="res${row.live?" liveres":""}"><div class="reshead"><div>
+      <div class="d">${row.live?'<span class="tag">LIVE</span>':""}${row.desc} ${sign(row.price)}</div>
+      <div class="m">${row.book} · ${money(row.stake)} · fair at bet ${(row.fair*100).toFixed(1)}%</div></div>
+      <span class="badge ${row.win?"b-win":"b-loss"}">${row.win?"WON":"LOST"} ${money(Math.round(row.pl))}</span></div>
+      ${ruler(dec(row.price),1/row.benchFair,row.live?"next tick":"close")}</div>`});
+  const liveRows=r.rows.filter(x=>x.live&&!x.parlay),preRows=r.rows.filter(x=>!x.live);
+  const lb=liveRows.filter(x=>dec(x.price)>1/x.benchFair).length;
+  const cum=state.hist.reduce((a,x)=>({pl:a.pl+x.pl,b:a.b+x.beat,g:a.g+x.graded}),{pl:0,b:0,g:0});
+  h+=`<div class="summary"><h3>Slate ${state.slate} scorecard</h3>
+    <div class="srow"><span>Realized P&amp;L</span><span class="v ${r.pl>=0?"pos":"neg"}">${money(Math.round(r.pl))}</span></div>
+    <div class="srow"><span>Expected P&amp;L</span><span class="v flat">${money(Math.round(r.ev))}</span></div>
+    <div class="srow"><span>Beat the benchmark</span><span class="v ${r.beat/r.graded>=.5?"pos":"neg"}">${r.beat}/${r.graded}</span></div>
+    ${liveRows.length?`<div class="srow"><span>Live bets beat next tick</span><span class="v ${lb/liveRows.length>=.5?"pos":"neg"}">${lb}/${liveRows.length}</span></div>`:""}
+    <div class="srow"><span>Career CLV rate</span><span class="v ${cum.g&&cum.b/cum.g>=.5?"pos":"neg"}">${cum.g?Math.round(cum.b/cum.g*100):0}% · ${cum.g} bets</span></div>
+    <div class="verdict">${verdict(r,cum,liveRows,lb)}</div></div>
+    <button class="nextbtn" id="next">Next slate</button>
+    <button class="ghost" id="reset">Reset bankroll</button><div style="height:26px"></div>`;
+  m.innerHTML=h;
+  document.getElementById("next").onclick=()=>{state.slate++;state.phase="pregame";state.win=-1;
+    state.games=genSlate();state.slip=[];state.placed=[];state.parStake=0;state.mode="single";state.results=null;
+    document.getElementById("slatelbl").textContent=`Slate ${state.slate} · pregame`;
+    renderBoard();renderSlip();window.scrollTo({top:0})};
+  document.getElementById("reset").onclick=()=>{state=Object.assign(state,{bank:5000,hist:[],slate:1,phase:"pregame",
+    win:-1,games:genSlate(),slip:[],placed:[],results:null,parStake:0,mode:"single"});
+    document.getElementById("slatelbl").textContent="Slate 1 · pregame";renderBoard();renderSlip();renderStats()};
+}
+function won2(l,r){const f=r.finals[l.gi],L=l.lines;let w;
+  if(l.key==="ml")w=l.s===0?f.m>0:f.m<0;else if(l.key==="sp")w=l.s===0?(f.m-L.sp)>0:(f.m-L.sp)<0;
+  else if(l.key==="tot")w=l.s===0?f.t>L.tot:f.t<L.tot;else w=l.s===0?f.p>L.prop:f.p<L.prop;
+  return w?"✓":"✗"}
+function verdict(r,cum,liveRows,lb){
+  const good=r.beat/r.graded>=.5,won=r.pl>=0;
+  let base;
+  if(good&&!won)base=`You <b>beat the benchmark on ${r.beat} of ${r.graded}</b> bets and still lost money. The prices you took were better than where the market went next. Variance did the rest. Nothing here says stop.`;
+  else if(!good&&won)base=`You made money while <b>losing to the benchmark</b>. You paid above fair and got rescued. Repeated, this bleeds.`;
+  else if(good&&won)base=`Beat the benchmark and won. Process and result agreed, which happens often enough to mislead. Keep grading the left column.`;
+  else base=`Missed the benchmark and lost. Check whether you took prices <b>below</b> the sharp fair — the EV toggle shows that before you commit.`;
+  if(liveRows.length&&lb/liveRows.length<.5)base+=` Your live bets beat the next tick only ${lb} of ${liveRows.length} times — the 7–9% live hold is doing exactly what it's designed to do.`;
+  return base}
+function renderStats(){
+  document.getElementById("s-bank").textContent=money(Math.round(state.bank));
+  const c=state.hist.reduce((a,x)=>({pl:a.pl+x.pl,b:a.b+x.beat,g:a.g+x.graded}),{pl:0,b:0,g:0});
+  const p=document.getElementById("s-pl");p.textContent=state.hist.length?money(Math.round(c.pl)):"—";
+  p.className="v num "+(c.pl>0?"pos":c.pl<0?"neg":"");
+  const v=document.getElementById("s-clv");v.textContent=c.g?Math.round(c.b/c.g*100)+"%":"—";
+  v.className="v num "+(c.g?(c.b/c.g>=.5?"pos":"neg"):"")}
+document.getElementById("sliphead").onclick=()=>{const b=document.getElementById("slipbody");
+  b.style.display=b.style.display==="none"?"block":"none"};
+state.games=genSlate();renderBoard();renderSlip();renderStats();
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+# The core NBA stats database (schema, ingest, scripts) runs on the Python
+# standard library only — sqlite3 ships with CPython, so there are no runtime
+# dependencies to install for `make rebuild`.
+#
+# Requires Python 3.9+ (uses sqlite3 generated columns and JSON1, both built in).
