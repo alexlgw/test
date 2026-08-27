@@ -38,18 +38,25 @@ schema/           Migrations, applied in order by the runner
   004_market.sql    odds as a time series, bet ledger, CLV
   005_derived.sql   integrity-check + team-form + key-player views
   006_enrichment.sql season-level team strength + player availability (see below)
+  007_quarters.sql  per-quarter player scoring + quarter-distribution views
 src/nbadb/
   db.py             connection, migration runner, identity resolution
   ingest/feed.py    parse raw feed JSON into the schema; replay state
   ingest/reference.py  parse season enrichment JSON (team strength, players)
+  ingest/espn.py    parse the real ESPN season fixture (offline)
 scripts/
   bootstrap.py      create the DB and load the real BOS/OKC game
   enrich.py         load the season enrichment for BOS and OKC
+  fetch_espn.py     NETWORK: refresh the ESPN season fixture
+  load_espn.py      load the real ESPN season into the DB (offline)
   verify.py         prove replay, integrity, and derived views work
   matchup.py        win-probability estimate from the enriched data
+  quarters.py       quarter-by-quarter scoring, team and per-player
+  walkforward.py    sequential bet test + the "$500 last season" answer
 data/
   bos_okc_raw.json  the real feed payload, committed as a fixture
   enrichment_2025_26.json  cited season aggregates for BOS and OKC
+  espn_2025_26_games.json  real 162-game season (quarters, box, scorers)
 research/
   backtest.py       pattern-mining walkthrough on two teams (see note below)
 simulator/
@@ -143,6 +150,45 @@ team's key players with availability flags — so the injury context (Tatum at
 20%, Jalen Williams at 40%) is read *with* the estimate, not buried under it.
 This is a season-strength prior, not a bet: to grade a wager you still need the
 market line (`market_line` / `fair_price` in `004`), which needs a paid odds feed.
+
+## Quarter data and the sequential bet test (`schema/007`, ESPN season)
+
+`make rebuild` also loads a **real 162-game 2025-26 season** for BOS and OKC,
+pulled from ESPN's public API (`scripts/fetch_espn.py` writes the committed
+fixture `data/espn_2025_26_games.json`; `scripts/load_espn.py` ingests it
+offline). Unlike the sandbox feed, this carries **minutes**, per-quarter team
+linescores, and **per-quarter player points** parsed from play-by-play scoring
+plays. It lands in the existing `game` / `game_period_score` / `player_game_stat`
+tables plus the new `player_period_stat`.
+
+- **`make quarters`** — how each team's scoring distributes across quarters
+  (average, in wins vs losses, home vs away) and how each key player scores by
+  quarter. Real findings for 2025-26: both teams' **2nd quarter** separates
+  their wins from losses most (OKC +6.2, BOS +5.8 pts), and SGA is a **3rd-
+  quarter** monster (11.1 pts/game in Q3 alone).
+
+- **`make walkforward`** — the sequential test you asked for: bet game 1, use
+  the result to inform game 2, and so on, with **no lookahead**. An adaptive
+  strategy follows whichever simple rule ("ride the streak", "bounce back after
+  a loss", "bet after a Q3 win", …) has the best record *so far*.
+
+### The "$500 last season" answer
+
+Betting OKC and BOS to win went **121-45 (72.9%)** — and that is exactly why it
+is *not* a betting edge. These were 64- and 56-win teams; "bet them to win"
+hitting ~73% is a tautology, not a pattern. Winning 73% only profits if you are
+paid better than a 73% chance, i.e. better than ≈ **-269**. At the fantasy price
+of -110 the sim prints ~+$196 on $500, but that number is an artifact of
+underpricing a favorite. **At the real moneyline for a 73% winner, the same
+record returns ≈ $0 before vig and a small loss after it.**
+
+So, honestly: with $500 on these patterns last season you win **roughly
+nothing**. The hit rate is real; the profit is not, because the sim prices bets
+at an assumed -110 instead of the **actual closing lines the project still
+doesn't have**. A genuine edge means beating that closing line (CLV) — which
+needs a historical-odds feed, not more box-score or quarter data. The quarter
+data is genuinely useful for *understanding* games and for quarter-level props;
+it does not, by itself, manufacture a profitable system.
 
 ## About `research/backtest.py`
 
