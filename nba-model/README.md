@@ -59,6 +59,9 @@ scripts/
   walkforward.py    sequential bet test (assumed -110 pricing)
   odds.py           grade the season at REAL closing lines + CLV
   strategies.py     test a menu of strategies + noise & out-of-sample guards
+  edges.py          devig -> fair_price, market consistency, CLV ledger
+src/nbadb/model/
+  prob.py           odds conversion, two-way devig, spread->win-prob
 data/
   bos_okc_raw.json  the real feed payload, committed as a fixture
   enrichment_2025_26.json  cited season aggregates for BOS and OKC
@@ -248,6 +251,36 @@ Several clear the −110 break-even in-sample (e.g. "cover as underdog" 62%,
 Different strategies, same honest verdict as `research/backtest.py`: **no edge
 you could have bet in advance.** The only durable signal remains CLV — beating
 the closing price — which needs multiple books to exploit, not more strategies.
+
+## Devig, fair price, and CLV (`make edges`)
+
+A second, independent book is what you would devig and compare to hunt for a
+mispriced number — but **no free historical, independent book proved reachable
+for 2025-26**: ESPN backfills only ESPN BET, and The Odds API / SportsGameOdds /
+odds-api.io all require a paid key. So `scripts/edges.py` builds the workflow a
+second book plugs into, using the one book we have, and populates the market
+half of the schema the earlier steps left empty:
+
+- **Devig → `fair_price`.** Strips the vig from each closing moneyline
+  (multiplicative method) into a vig-free fair probability. The book's average
+  moneyline overround is **4.3%** — the house edge every bet starts behind.
+- **Market internal consistency.** The closing *spread*-implied P(home win) and
+  the closing *moneyline*-implied P(home win) agree to within a mean 0.5% (sd
+  3.3%). Betting the >3% disagreements goes 50-27 (65%!) but **−14.5% ROI** —
+  a perfect reminder that a high hit rate on favorites still loses money. No
+  exploitable inconsistency.
+- **CLV ledger → `bet` / `bet_grade`.** Bets each opening price and grades it
+  against the devigged closing fair value. The open beats the fair close just
+  28% of the time; average EV **−4.0%**, essentially the full vig. This
+  reconciles with `make odds` (open beat close on raw *price* ~51% of the time,
+  +0.9%): the line drifts your way a hair, but that drift is swamped by the 4.3%
+  vig, so there is no positive EV inside one book.
+
+The verdict, now with the machinery fully built: the blocker is **data access
+(a keyed odds API), not the model**. `fair_price`, `bet`, and `bet_grade` are
+populated and ready — feed them a sharp second price (e.g. Pinnacle) and the
+pipeline flags every game where the two fair probabilities diverge, which is the
+only edge this project has ever pointed to.
 
 ## About `research/backtest.py`
 
