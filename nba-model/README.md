@@ -58,6 +58,7 @@ scripts/
   quarters.py       quarter-by-quarter scoring, team and per-player
   walkforward.py    sequential bet test (assumed -110 pricing)
   odds.py           grade the season at REAL closing lines + CLV
+  strategies.py     test a menu of strategies + noise & out-of-sample guards
 data/
   bos_okc_raw.json  the real feed payload, committed as a fixture
   enrichment_2025_26.json  cited season aggregates for BOS and OKC
@@ -225,6 +226,28 @@ catching a stale number before the market corrects it — which is what the
 `bet` / `bet_grade` ledger and `fair_price` devig in `004` exist to measure, and
 which needs many books, not one. More box-score, quarter, or odds *history* does
 not manufacture that edge; it just lets you prove, honestly, when it is absent.
+
+## Strategy lab (`make strategies`)
+
+`scripts/strategies.py` tests a **menu of ~16 situational strategies** against
+the real closing lines — angles the odds and game-date data newly make possible:
+line-movement follow/fade (open→close steam), rest and back-to-backs, favorite
+size, home/road, underdog value, and walk-forward ATS streaks. Each is graded at
+the real price (ATS/totals at −110, moneyline at the actual number).
+
+Several clear the −110 break-even in-sample (e.g. "cover as underdog" 62%,
+"follow steam" 58%). That is exactly the trap, so two guards run afterward:
+
+- **Guard 1 — coin-flip null.** Re-runs all strategies on random outcomes 3,000
+  times and takes the best each time. The best *real* ATS/total ROI (+18.5%) is
+  matched by pure noise about **24% of the time** — i.e. a season routinely
+  hands you a "winner" that good when nothing is real.
+- **Guard 2 — out-of-sample.** The best strategy on the first half of the season
+  ("fade steam", +32% ROI) collapses to **−1.5%** on the second half.
+
+Different strategies, same honest verdict as `research/backtest.py`: **no edge
+you could have bet in advance.** The only durable signal remains CLV — beating
+the closing price — which needs multiple books to exploit, not more strategies.
 
 ## About `research/backtest.py`
 
