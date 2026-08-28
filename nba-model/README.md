@@ -282,6 +282,25 @@ populated and ready — feed them a sharp second price (e.g. Pinnacle) and the
 pipeline flags every game where the two fair probabilities diverge, which is the
 only edge this project has ever pointed to.
 
+## Second-half player scoring (`make second-half`)
+
+Player props — especially half-props — are the **softest, least efficient
+market**, so "bet a key player's second-half points" is the most promising angle
+in the project. `scripts/second_half.py` builds the scoring side of that bet from
+the play-by-play: each key player's Q3+Q4 points per game (mean, std, floor,
+ceiling) and the team's second-half total. On 2025-26, SGA is the steadiest —
+15.9 ± 5.1 in the second half with a floor of 4 — while the team 2H totals are
+tight (OKC 58 ± 8, BOS 55 ± 9).
+
+The **data wall** is the price side: ESPN's free historical odds carry full-game
+player point props, but **no second-half player props**, and their over/under
+side is unlabeled and not bulk-queryable — so 2H prop *bets* can't be graded in
+dollars here. The number to exploit isn't the average (the book sets the line
+there) but the **dispersion and floor**: a low-variance star whose 2H points
+rarely dip below a number is where a soft half-prop line leaks value. Capturing
+it needs a props-capable odds feed (a keyed API), which is the same data-access
+wall every step of this project has ended on — not a modelling limit.
+
 ## Fade-a-team test (`make fade TEAM=WSH`)
 
 `scripts/fade_team.py` answers "bet team X to lose every game" at real closing
