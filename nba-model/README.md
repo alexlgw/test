@@ -282,6 +282,22 @@ populated and ready — feed them a sharp second price (e.g. Pinnacle) and the
 pipeline flags every game where the two fair probabilities diverge, which is the
 only edge this project has ever pointed to.
 
+## Fade-a-team test (`make fade TEAM=WSH`)
+
+`scripts/fade_team.py` answers "bet team X to lose every game" at real closing
+lines for any team (fetches its season + odds from ESPN, falling back across
+books since ESPN backfills DraftKings for some games and ESPN BET for others).
+
+On the 2025-26 **Wizards (17-64)**: they lost 79% of the time, but betting them
+to lose means backing their opponents at an average −752 moneyline, so it
+returns **−2%** — the price already knows they are bad, the exact mirror of
+betting good teams to win. Fading them **ATS** went 48-33 (59%, +$66), which
+looks alive but is z=1.7 / p=0.10 on 81 games — a likely fluke. Running the same
+tool on **Utah (22-60)** confirms it: fading the Jazz ATS came in at exactly
+41-41 (**50%**). One season on one team can't tell a real angle from a hot
+streak, and the "fade the tank team" angle regresses to the coin flip the vig
+turns into a loss.
+
 ## About `research/backtest.py`
 
 This is the honest walkthrough that motivated the database, not a strategy to

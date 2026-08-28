@@ -1,5 +1,5 @@
 .PHONY: init enrich load-espn load-odds verify matchup quarters walkforward odds \
-        strategies edges fetch-espn fetch-odds test clean
+        strategies edges fade fetch-espn fetch-odds test clean
 init:        ; python3 scripts/bootstrap.py
 enrich:      ; python3 scripts/enrich.py
 load-espn:   ; python3 scripts/load_espn.py
@@ -11,6 +11,7 @@ walkforward: ; python3 scripts/walkforward.py
 odds:        ; python3 scripts/odds.py
 strategies:  ; python3 scripts/strategies.py
 edges:       ; python3 scripts/edges.py
+fade:        ; python3 scripts/fade_team.py $(TEAM)   # NETWORK: TEAM=WSH default
 fetch-espn:  ; python3 scripts/fetch_espn.py   # NETWORK: refresh the games fixture
 fetch-odds:  ; python3 scripts/fetch_odds.py   # NETWORK: refresh the odds fixture
 test:        ; python3 -m pytest tests -q
